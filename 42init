@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Comprobación de argumentos
+if [ "$#" -lt 2 ]; then
+    echo -e "\033[31mError: Not enaugh arguments.\033[0m"
+    echo "How to use: $0 <project_name> <exercise_num> [git_url]"
+    echo "Example without Git: $0 C02 8"
+    echo "Example with Git: $0 C02 8 git@vogsphere.42madrid.fr:vogsphere/..."
+    exit 1
+fi
+
+DIR_NAME="$1"
+NUM_EX="$2"
+GIT_URL="$3"
+
+# 1. Admin the repo or main directory
+if [ -n "$GIT_URL" ]; then
+    echo -e "\033[34m[+] Cloning repo...\033[0m"
+    git clone "$GIT_URL" "$DIR_NAME"
+    if [ $? -ne 0 ]; then
+        echo -e "\033[31mError at clone repo.\033[0m"
+        exit 1
+    fi
+else
+    echo -e "\033[34m[+] Creating directory $DIR_NAME...\033[0m"
+    mkdir -p "$DIR_NAME"
+fi
+
+# Enter to the directory
+cd "$DIR_NAME" || exit 1
+
+# 2. Generate subdiriectories ex00, ex01...
+echo -e "\033[34m[+] Creating $NUM_EX subdirectories...\033[0m"
+for (( i=0; i<NUM_EX; i++ )); do
+    # printf %02d ensures 2 digit format (ex00, ex01...)
+    EX_NAME=$(printf "ex%02d" "$i")
+    mkdir -p "$EX_NAME"
+done
+
+# 3. Generate README.md
+echo -e "\033[34m[+] Creating README.md...\033[0m"
+cat << EOF > README.md
+# $DIR_NAME
+
+*This project has been created as part of the curriculum of 42 by @legomez*
+
+## Description
+
+
+## Instructions
+
+
+## Resources
+
+EOF
+
+echo -e "\033[32m✨ ¡Workspace for '$DIR_NAME' successfully created!\033[0m"
