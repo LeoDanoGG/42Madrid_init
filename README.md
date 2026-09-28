@@ -1,4 +1,4 @@
-# 42 Project Initializer (`42init`)
+# 42 Project Initializer (`42init` for Common core)
 
 A Bash script designed for 42 School students to instantly scaffold project workspaces, clone Vogsphere/GitHub repositories and construct a root `Makefile` alongside a base `README.md`.
 
