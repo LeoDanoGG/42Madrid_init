@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Comprobación de argumentos
+# Checking arguments
 if [ "$#" -lt 2 ]; then
     echo -e "\033[31mError: Not enaugh arguments.\033[0m"
     echo "How to use: $0 <project_name> <exercise_num> [git_url]"
