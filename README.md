@@ -1,54 +1,110 @@
 # 42 Project Initializer (`42init`)
 
-A Bash script designed for 42 School students to instantly scaffold project directories, clone repositories, generate exercise folders (`ex00`, `ex01`, ...), and build a base `README.md`.
+A Bash script designed for 42 School students to instantly scaffold project workspaces, clone Vogsphere/GitHub repositories and construct a root `Makefile` alongside a base `README.md`.
 
 ---
 
-## 🛠️ Main Sections of the Script
+## 🛠️ Key Features & Architecture
 
-1. **Argument Parsing & Repository Setup:**
-Checks input arguments and either clones a remote Git repository (e.g., Vogsphere/GitHub) into your target directory or creates a new local folder if no URL is provided.
-2. **Subdirectory Generator (`exXX`):**
-Iterates from `0` to your specified number of exercises, creating padded subfolders (`ex00`, `ex01`, etc.) formatted to match 42 standards.
-3. **Documentation Generator (`README.md`):**
-Creates a standard `README.md` file inside the root directory containing the project name and an overview of the exercise structure.
+1. **Argument Validation & Dual Mode Setup:**
+Supports both local directory creation and remote repository cloning (Vogsphere/GitHub). Seamlessly handles single or group projects by parsing user logins.
+2. **Wildcard Root Makefile:**
+Generates a `Makefile` at the project root using `wildcard` (`ex*/*.c`) to automatically detect and compile `.c` files across all exercises.
+3. **Customizable Documentation:**
+Creates a tailored `README.md` referencing project authors and structure.
 
 ---
 
 ## 🚀 How to Use
 
-### 1. Requirements & Setup
+## ⚙️ Global Installation & Setup (Alias)
 
-Make the script executable and (optionally) add an alias to your `~/.zshrc`:
+Instead of keeping the script on your Desktop and executing it with absolute paths, you can configure it as a **global command** (`42init`). This allows you to generate new projects instantly from any directory in your terminal.
 
+### Step-by-Step Setup
+
+1. **Move the script to a dedicated folder in your home directory:**
 ```bash
-chmod +x init_proj.sh
-echo "alias 42init='~/path/to/init_proj.sh'" >> ~/.zshrc
+mkdir -p ~/scripts
+mv ~/Desktop/42init.sh ~/scripts/42init.sh
+
+```
+
+
+2. **Grant execution permissions:**
+```bash
+chmod +x ~/scripts/42init.sh
+
+```
+
+
+3. **Add a permanent alias to your shell configuration (`~/.zshrc`):**
+*(42 Mac workstations use `zsh` by default)*
+```bash
+echo "alias 42init='~/scripts/42init.sh'" >> ~/.zshrc
+
+```
+
+
+4. **Reload your terminal configuration:**
+```bash
 source ~/.zshrc
 
 ```
 
+### 💡 Workflow Impact
+
+Once configured, navigate to any working directory (such as `~/sgoinfre` or your projects folder) and run it.
+
+---
+
 ### 2. Execution Syntax
 
 ```bash
-# General syntax
-42init <directory_name> <number_of_exercises> [git_url]
+42init <project_name> [git_url|local] ["user1, user2"]
 
 ```
 
-* **Local creation (without Git):**
+#### Examples
+
+* **Single Project (Local):**
 ```bash
-42init C02 8
+42init C02
 
 ```
 
 
-*Creates directory `C02/` with subfolders `ex00` through `ex07` and a `README.md`.*
-* **Remote creation (with Git clone):**
+*Creates directory `C02/` with `ex00`–`ex09`, a wildcard `Makefile`, and a default `README.md`.*
+* **Single Project (Git Remote):**
 ```bash
-42init C02 8 git@vogsphere.42madrid.fr:vogsphere/piscine-c-c02-user...
+42init C02 git@vogsphere.42madrid.fr:vogsphere/piscine-c-c02-user...
 
 ```
 
 
-*Clones the remote repo into `C02/`, then generates `ex00`–`ex07` and `README.md` inside it.*
+*Clones the remote repository into `C02/` before setting up subfolders and build files.*
+* **Group Project (Local):**
+```bash
+42init Cub3D local "login1, login2"
+
+```
+
+
+*Generates a local workspace attributing authorship to multiple students in the `README.md`.*
+* **Group Project (Git Remote):**
+```bash
+42init Cub3D git@vogsphere.42madrid.fr:... "login1, login2"
+
+```
+
+
+
+---
+
+## 🛠️ Build Commands
+
+Inside the generated project directory, you can manage your build using the root `Makefile`:
+
+* `make` – Compiles all `.c` files found in `ex**/*.c` into the main executable.
+* `make status` – Displays all `.c` source files currently detected by the wildcard rule.
+* `make clean` / `make fclean` / `make re` – Standard 42 rule lifecycle for object files and binaries.
