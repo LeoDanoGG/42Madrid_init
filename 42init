@@ -13,7 +13,7 @@ DIR_NAME="$1"
 NUM_EX="$2"
 GIT_URL="$3"
 
-# 1. Admin the repo or main directory
+# 1. Manage the repo or main directory
 if [ -n "$GIT_URL" ]; then
     echo -e "\033[34m[+] Cloning repo...\033[0m"
     git clone "$GIT_URL" "$DIR_NAME"
