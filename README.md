@@ -25,9 +25,15 @@ Instead of keeping the script on your Desktop and executing it with absolute pat
    ```
    chmod +x ~/scripts/42init.sh
    ```
-3. **Add a permanent alias to your shell configuration (`~/.zshrc`):** *(42 Mac workstations use `zsh` by default)*
+3. **Configure the alias for your shell:**
+ - Option A: Zsh (Default Shell)
    ```
    echo "alias 42init='~/scripts/42init.sh'" >> ~/.zshrc
+   ```
+ - Option B: Fish Shell
+   ```
+   echo "alias 42init='~/scripts/42init.sh'" >> ~/.zshrc
+   echo "funcsave 42init" >> ~/.zshrc
    ```
 4. **Reload your terminal configuration:**
    ```
