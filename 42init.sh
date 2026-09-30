@@ -37,15 +37,16 @@ fi
 cd "$DIR_NAME" || exit 1
 
 # ==============================================================================
-# SECTION 3: Root Makefile Generation (Wildcard)
+# SECTION 3: Root Makefile Generation
 # ==============================================================================
 echo -e "\033[34m[+] Creating Makefile...\033[0m"
 
 cat << EOF > Makefile
 NAME        = $DIR_NAME
 
-# Dynamic capture of all .c files
-SRCS        = \$(wildcard ex*/*.c)
+# Put in SRCS your .c files
+SRCS        := 
+
 OBJS        = \$(SRCS:.c=.o)
 
 CC          = cc
