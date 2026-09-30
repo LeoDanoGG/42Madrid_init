@@ -18,6 +18,9 @@ DIR_NAME="$1"
 GIT_OPTION="${2:-local}"         # Default to 'local' if $2 is omitted
 USERS="${3:-legomez}"            # Default author if $3 is omitted
 
+# Header guard formatted in uppercase (e.g., LIBFT_H)
+HEADER_GUARD="$(echo "$DIR_NAME" | tr '[:lower:]' '[:upper:]')_H"
+
 # ==============================================================================
 # SECTION 2: Repository or Directory Setup
 # ==============================================================================
@@ -37,27 +40,46 @@ fi
 cd "$DIR_NAME" || exit 1
 
 # ==============================================================================
-# SECTION 3: Root Makefile Generation
+# SECTION 3: Header File Generation (.h)
+# ==============================================================================
+echo -e "\033[34m[+] Creating $DIR_NAME.h...\033[0m"
+
+cat << EOF > "$DIR_NAME.h"
+#ifndef $HEADER_GUARD
+# define $HEADER_GUARD
+
+# include <unistd.h>
+# include <stdlib.h>
+
+/* Project: $DIR_NAME */
+/* Author(s): $USERS */
+
+#endif
+EOF
+
+# ==============================================================================
+# SECTION 4: Root Makefile Generation
 # ==============================================================================
 echo -e "\033[34m[+] Creating Makefile...\033[0m"
 
 cat << EOF > Makefile
 NAME        = $DIR_NAME
 
-# Put in SRCS your .c files
+# Add your .c files to SRCS
 SRCS        := 
 
 OBJS        = \$(SRCS:.c=.o)
+INCLUDES    = $DIR_NAME.h
 
 CC          = cc
-CFLAGS      = -Wall -Wextra -Werror
+CFLAGS      = -Wall -Wextra -Werror -I.
 
 all: \$(NAME)
 
 \$(NAME): \$(OBJS)
 	\$(CC) \$(CFLAGS) \$(OBJS) -o \$(NAME)
 
-%.o: %.c
+%.o: %.c \$(INCLUDES)
 	\$(CC) \$(CFLAGS) -c $< -o \$@
 
 clean:
@@ -68,11 +90,11 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re status
+.PHONY: all clean fclean re
 EOF
 
 # ==============================================================================
-# SECTION 4: README.md Generation
+# SECTION 5: README.md Generation
 # ==============================================================================
 echo -e "\033[34m[+] Creating README.md...\033[0m"
 
