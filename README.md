@@ -78,4 +78,4 @@ Inside the generated project directory, edit your `Makefile` to list your source
 - `make clean` / `make fclean` / `make re` – Standard 42 rule lifecycle for object files and executable.
 
  
-> ⚠️ **42 Norminette & Header Reminder:** This script creates the basic structural files to speed up project initialization. Remember that you **must manually insert the official 42 Header** (`Stdheader` / `Ctrl+C Ctrl+H` in Vim/VS Code) at the top of all your `.c`, `.h`, and `Makefile` files to comply with Norminette guidelines.
+> ⚠️ **42 Norminette & Header Reminder:** This script creates the basic structural files to speed up project initialization. Remember that you **must manually insert the official 42 Header** (`:Stdheader` in Vim / using the extension in VS Code) at the top of all your `.c`, `.h`, and `Makefile` files to comply with Norminette guidelines.
