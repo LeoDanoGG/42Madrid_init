@@ -47,14 +47,16 @@ EXISTING_SRCS=$(find . -maxdepth 1 -name "*.c" -exec basename {} \; 2>/dev/null 
 echo -e "\033[34m[+] Creating $DIR_NAME.h...\033[0m"
 
 cat << EOF > "$DIR_NAME.h"
+/* Project: $DIR_NAME */
+/* Author(s): $USERS */
+
 #ifndef $HEADER_GUARD
 # define $HEADER_GUARD
 
 # include <unistd.h>
 # include <stdlib.h>
 
-/* Project: $DIR_NAME */
-/* Author(s): $USERS */
+/* Code */
 
 #endif
 EOF
