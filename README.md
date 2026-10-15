@@ -80,18 +80,6 @@ Inside the generated project directory, you no longer need to edit `SRCS` by han
 
 - `make` – Compiles all `.c` files listed in `SRCS` into the binary.
 - `make clean` / `make fclean` / `make re` – Standard 42 rule lifecycle for object files and executable.
-- `make upload` – Scans the project root (no subdirectories) for `.c` files, then:
-  - rewrites the `SRCS` block of the `Makefile`, grouped 5 files per line;
-  - replaces the file list inside the `README.md` under **Project Files**.
-
-### 📌 How `make upload` works
-
-The rule only edits the content **between markers**, so the rest of your files are never touched:
-
-| File | Start marker | End marker |
-|------|--------------|------------|
-| `Makefile` | `# SRCS_START` | `# SRCS_END` |
-| `README.md` | `<!-- FILES_START -->` | `<!-- FILES_END -->` |
 
 > ⚠️ **Do not delete or rename these markers.** If a marker is missing, `make upload` will not be able to update that file. Anything you write between the markers will be overwritten on the next run; write your own notes outside of them.
 ---
