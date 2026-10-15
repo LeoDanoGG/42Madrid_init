@@ -3,6 +3,7 @@
 # ==============================================================================
 # SECTION 1: Argument Validation & Parameter Processing
 # ==============================================================================
+
 if [ "$#" -lt 1 ]; then
     echo -e "\033[31mError: Not enough arguments.\033[0m"
     echo "Usage: $0 <project_name> [git_url|local] [\"user1, user2\"]"
@@ -24,6 +25,7 @@ HEADER_GUARD="$(echo "$DIR_NAME" | tr '[:lower:]' '[:upper:]')_H"
 # ==============================================================================
 # SECTION 2: Repository or Directory Setup
 # ==============================================================================
+
 if [[ "$GIT_OPTION" =~ ^(git@|http) ]]; then
     echo -e "\033[34m[+] Cloning repository...\033[0m"
     git clone "$GIT_OPTION" "$DIR_NAME"
@@ -44,12 +46,10 @@ EXISTING_SRCS=$(find . -maxdepth 1 -name "*.c" -exec basename {} \; 2>/dev/null 
 # ==============================================================================
 # SECTION 3: Header File Generation (.h)
 # ==============================================================================
+
 echo -e "\033[34m[+] Creating $DIR_NAME.h...\033[0m"
 
 cat << EOF > "$DIR_NAME.h"
-/* Project: $DIR_NAME */
-/* Author(s): $USERS */
-
 #ifndef $HEADER_GUARD
 # define $HEADER_GUARD
 
@@ -64,12 +64,13 @@ EOF
 # ==============================================================================
 # SECTION 4: Root Makefile Generation
 # ==============================================================================
+
 echo -e "\033[34m[+] Creating Makefile...\033[0m"
 
 cat << EOF > Makefile
 NAME        = $DIR_NAME
 
-# Source files (grouped by 5)
+# Source files (better group by 5)
 SRCS        = ${EXISTING_SRCS}
 
 OBJS        = \$(SRCS:.c=.o)
@@ -100,21 +101,47 @@ EOF
 # ==============================================================================
 # SECTION 5: README.md Generation
 # ==============================================================================
+
 echo -e "\033[34m[+] Creating README.md...\033[0m"
 
 cat << EOF > README.md
+*This project has been created as part of the 42 curriculum by $USERS.*
+ 
 # $DIR_NAME
-
-*This project has been created as part of the curriculum of 42 by $USERS*
-
+ 
 ## Description
-
+ 
+<!-- Goal of the project, short overview and allowed external functions. -->
+ 
+## Algorithm: explanation and justification
+ 
+<!--
+- Data structures used and why.
+- Step-by-step flow, ideally with a worked example.
+- Memory management.
+- Why this approach was chosen over the alternatives.
+- Trade-offs and limitations.
+-->
 
 ## Instructions
-
-
+ 
+### Usage
+ 
+<!-- How to run it, with a short example. -->
+ 
+### Testing
+ 
+<!-- Edge cases tested and tools used (e.g. valgrind). -->
+ 
 ## Resources
-
+ 
+- [Resource name](https://example.com) - what it was used for.
+ 
+### Use of AI
+ 
+<!-- Which AI tools were used, for which tasks and for which parts of the project. -->
 EOF
+
+# ==============================================================================
 
 echo -e "\033[32m✨ Workspace for '$DIR_NAME' successfully created for [$USERS]!\033[0m"
