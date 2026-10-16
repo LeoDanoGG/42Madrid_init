@@ -56,11 +56,11 @@ To run `42init` from any working directory in your terminal, move the script to 
    * **Zsh:** Run `source ~/.zshrc` or open a new terminal tab.
    * **Fish:** `funcsave` persists the alias automatically across all future sessions.
 
-   > 💡 **Default Author Note:**
-   > The script uses `legomez` as the default author login. You can change it directly inside `42init.sh` or run this command in your terminal to replace it with your own login:
-   > ```bash
-   > sed -i '' 's/USERS="${USERS:-legomez}"/USERS="${USERS:-YOUR_LOGIN}"/' ~/scripts/42init.sh
-   > ```
+> 💡 **Default Author Note:**
+> The script uses `legomez` as the default author login. You can change it directly inside `42init.sh` or run this command in your terminal to replace it with your own login:
+> ```bash
+> sed -i '' 's/USERS="${USERS:-legomez}"/USERS="${USERS:-YOUR_LOGIN}"/' ~/scripts/42init.sh
+> ```
 
 ---
 
