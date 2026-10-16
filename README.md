@@ -1,90 +1,117 @@
 # 42 Project Initializer (`42init` for 42 Cursus)
 
-A Bash script designed for 42 School students to instantly scaffold project workspaces, clone Vogsphere/GitHub repositories, generate a project header (`.h`), and construct a root `Makefile` alongside a base `README.md`. It also includes a `make upload` rule that keeps your `SRCS` list and your README file listing in sync with the `.c` files in your project.
+An interactive CLI assistant (*wizard*) designed for 42 School students to quickly scaffold project workspaces, clone Vogsphere/GitHub repositories, generate language-specific boilerplate (C & Python), and keep source files synchronized between `Makefile` and `README.md`.
 
-## 🛠️ Key Features & Architecture
+Index
+ - [Key features & architecture](##🛠️-Key-features-&-architecture)
+ - [Global installation & setup](##⚙️-Global-installation-&-setup-(alias))
+ - [How to use](##🚀-How-to-use)
+ - [Updating existing projects](##🔄-Updating-existing-projects-(`Sync`-mode))
+ - [Important reminders](##⚠️-Important-42-guidelines-&-reminders)
 
-1. **Argument Validation & Dual Mode Setup:** Supports both local directory creation and remote repository cloning (Vogsphere/GitHub). Seamlessly handles single or group projects by parsing user logins.
-2. **Dynamic Header File Generation (`.h`):** Creates a project header file (e.g., `Libft.h`) formatted with standard uppercase header guards (`#ifndef LIBFT_H`), base libraries (`unistd.h`, `stdlib.h`), and project metadata.
-3. **Structured Root Makefile:** Generates a clean `Makefile` configured with `-I.` in `CFLAGS` to locate your headers and links `$(INCLUDES)` as a dependency to trigger recompilation when `.h` files are modified.
-4. **Automatic Source Tracking (`make upload`):** Scans the project root for `.c` files, rewrites the `SRCS` variable in the `Makefile` (5 files per line) and refreshes the file list inside the `README.md`. It runs automatically once at project creation, so any `.c` files already present in a cloned repository are picked up from the start.
-5. **Customizable Documentation:** Creates a tailored `README.md` referencing project authors and structure.
+---
 
-## 🚀 How to Use
+## 🛠️ Key features & architecture
 
-### ⚙️ Global Installation & Setup (Alias)
+1. **Interactive CLI Wizard:**  
+   Launch `42init` and answer simple terminal prompts with safe default values. No need to memorize complex syntax or flags.
+2. **Dual Operation Modes:**
+   - **Mode 1 (Create/Scaffold):** Sets up brand-new C or Python workspaces.
+   - **Mode 2 (Sync/Update):** Scans an existing project for `.c` files and updates both the `Makefile` and `README.md` without leaving extra rules or code artifacts in your build files.
+3. **Multi-Language Support (C & Python):**
+   - **C Projects:** Generates dynamic header files (`.h`) with uppercase header guards, standard 42-compliant `Makefile`s (with optional static library linkage like `libft`), and clean source structure.
+   - **Python Projects:** Generates a clean executable `main.py` entrypoint and a base `requirements.txt` for 42 Common Core Python modules.
+4. **Clean Source Grouping (5 files per line):**  
+   Automatically formats `.c` files in groups of 5 with proper alignment (`SRCS = ... \`) inside `Makefile`s and inside Markdown code blocks in `README.md`.
+5. **Tailored 42 Documentation:**  
+   Produces a detailed `README.md` template covering description, architecture/algorithms, usage, testing, resources, and AI tool usage disclosures.
 
-Instead of keeping the script on your Desktop and executing it with absolute paths, you can configure it as a **global command** (`42init`). This allows you to generate new projects instantly from any directory in your terminal.
+---
 
-1. **Move the script to a dedicated folder in your home directory:**
-```
+## ⚙️ Global installation & setup (alias)
+
+To run `42init` from any working directory in your terminal, move the script to a dedicated directory and create a global alias according to your shell.
+
+1. **Move the script and grant execution permissions:**
+   ```bash
    mkdir -p ~/scripts
    mv ~/Desktop/42init.sh ~/scripts/42init.sh
-```
-2. **Grant execution permissions:**
-```
    chmod +x ~/scripts/42init.sh
-```
-3. **Configure the alias for your shell:**
- - Option A: Zsh (Default Shell)
-```
+   ```
+
+2. **Configure the alias for your shell:**
+* **Option A: Zsh (Default 42 Mac Shell)**
+   ```bash
    echo "alias 42init='~/scripts/42init.sh'" >> ~/.zshrc
-```
- - Option B: Fish Shell
-```
+   source ~/.zshrc
+   ```
+
+* **Option B: Fish Shell**
+   ```fish
    alias 42init='~/scripts/42init.sh'
    funcsave 42init
-```
-4. **Reload your terminal configuration (Zsh):**
-```
-   source ~/.zshrc
-```
+   ```
 
-> 💡 **Default Author Note:** The script uses `legomez` as the default author login. You can change it directly inside `42init.sh` or run this command in your terminal to replace it with your own login:
->
-> ```
-> sed -i.bak 's/USERS="${3:-legomez}"/USERS="${3:-YOUR_LOGIN}"/' ~/scripts/42init.sh && rm -f ~/scripts/42init.sh.bak
-> ```
+3. **Reload your shell session:**
+   * **Zsh:** Run `source ~/.zshrc` or open a new terminal tab.
+   * **Fish:** `funcsave` persists the alias automatically across all future sessions.
 
-### 💻 Execution Syntax
+   > 💡 **Default Author Note:**
+   > The script uses `legomez` as the default author login. You can change it directly inside `42init.sh` or run this command in your terminal to replace it with your own login:
+   > ```bash
+   > sed -i '' 's/USERS="${USERS:-legomez}"/USERS="${USERS:-YOUR_LOGIN}"/' ~/scripts/42init.sh
+   > ```
 
-```
-42init <project_name> [git_url|local] ["user1, user2"]
-```
-
-#### Examples
-
-- **Single Project (Local):**
-```
-  42init Libft
-```
-   *Creates directory `Libft/` with `Libft.h`, a configured `Makefile`, and a base `README.md`.*
-- **Single Project (Git Remote):**
-```
-  42init Libft git@vogsphere.42madrid.fr:vogsphere/piscine-c-libft-user...
-```
-   *Clones the remote repository into `Libft/` before setting up header and build files. Any `.c` files already in the repository root are added to `SRCS` automatically.*
-- **Group Project (Local):**
-```
-  42init Cub3D local "login1, login2"
-```
-   *Generates a local workspace attributing authorship to multiple students in the header and `README.md`.*
-- **Group Project (Git Remote):**
-```
-  42init Cub3D git@vogsphere.42madrid.fr:... "login1, login2"
-```
-
-## 🛠️ Build Commands & Important Notes
-
-Inside the generated project directory, you no longer need to edit `SRCS` by hand: add your `.c` files to the project root and run `make upload`.
-
-- `make` – Compiles all `.c` files listed in `SRCS` into the binary.
-- `make clean` / `make fclean` / `make re` – Standard 42 rule lifecycle for object files and executable.
-
-> ⚠️ **Do not delete or rename these markers.** If a marker is missing, `make upload` will not be able to update that file. Anything you write between the markers will be overwritten on the next run; write your own notes outside of them.
 ---
-> ⚠️ **Makefile tabs:** recipe lines in a Makefile must start with a real **TAB**, not spaces. If you edit the generated `Makefile` and see `missing separator`, that is almost always the cause.
+
+## 🚀 How to use
+
+Simply run the global command from any directory in your terminal:
+
+```bash
+42init
+```
+
+### 📋 Interactive flow overview
+
+When executed, `42init` will guide you through the following prompt sequence:
+
+1. **Action Selection:**
+* `1) Create / Scaffold a new project`
+* `2) Sync / Update .c files in current directory` *(Updates Makefile & README)*
+
+2. **Project Name:** Name of the folder to create.
+3. **Repository Setup:** Local directory vs. Git clone (`git@vogsphere...` / GitHub).
+4. **Author Login(s):** Authors credited in headers and `README.md`.
+5. **Language Selection:**
+* `1) C (Common Core / Piscine)`
+* `2) Python (Common Core)`
+
+6. **C Configuration (if C selected):**
+* Generate `Makefile`? `[Y/n]`
+* Include external/static library support (e.g. `libft` / `MLX`)? `[y/N]`
+
+
+7. **Documentation:** Generate `README.md`? `[Y/n]`
+
 ---
-> ⚠️ **Norm reminder:** `upload` is a convenience rule for your day-to-day workflow. Check that its use is allowed in your project's subject and evaluation rules, and that the final `SRCS` in your delivered `Makefile` lists only the files the subject permits (no wildcards).
+
+## 🔄 Updating existing projects (`Sync` mode)
+
+Once you have written or added new `.c` files in your project root, you do **not** need to manually edit your `Makefile` or `README.md`:
+
+1. Open your terminal in the project root folder.
+2. Run `42init`.
+3. Choose **Option 2 (Sync / Update)**.
+
+The script will scan for `.c` files, group them 5 per line with precise alignment, and update the contents between the `# SRCS_START` / `# SRCS_END` tags in `Makefile` and `<!-- FILES_START -->` / `<!-- FILES_END -->` tags in `README.md`.
+
 ---
-> ⚠️ **42 Norminette & Header Reminder:** This script creates the basic structural files to speed up project initialization. Remember that you **must manually insert the official 42 Header** (`:Stdheader` in Vim / using the extension in VS Code) at the top of all your `.c`, `.h`, and `Makefile` files to comply with Norminette guidelines.
+
+## ⚠️ Important 42 guidelines & reminders
+
+> ⚠️ **Preserve Structural Markers:**
+> Do not delete `# SRCS_START` / `# SRCS_END` in `Makefile` or `<!-- FILES_START -->` / `<!-- FILES_END -->` in `README.md`. The sync mode uses these exact tags to update your source files safely.
+
+> ⚠️ **42 Norminette & Header Reminder:**
+> This script creates structural boilerplate to speed up your workflow. You **must manually insert the official 42 Header** (`:Stdheader` in Vim / VS Code extension shortcut) at the top of all `.c`, `.h`, and `Makefile` files to comply with Norminette rules.
