@@ -1,175 +1,226 @@
 #!/bin/bash
 
 # ==============================================================================
-# UPDATER FUNCTION (Pure Shell Execution & Safe Block Formatting)
+# 42init - Interactive project scaffolder for 42 School
+#
+# 42init        Interactive wizard (create a project or sync an existing one)
+# 42init sync   Shortcut: refresh SRCS and the README file list right here
 # ==============================================================================
 
-update_existing_project() {
-    echo -e "\033[34m[+] Scanning directory for .c files...\033[0m"
+BLUE="\033[34m"; GREEN="\033[32m"; YELLOW="\033[33m"
+RED="\033[31m"; CYAN="\033[36m"; RESET="\033[0m"
 
-    # Step 1: Discover .c files, strip ./, sort and group 5 per line
-    RAW_FILES=$(find . -maxdepth 1 -name '*.c' | sed 's|^\./||' | sort | xargs -n 5)
+info() { echo -e "${BLUE}[+] $1${RESET}"; }
+ok()   { echo -e "${GREEN}✔ $1${RESET}"; }
+warn() { echo -e "${YELLOW}[!] $1${RESET}"; }
+err()  { echo -e "${RED}Error: $1${RESET}"; }
 
-    if [ -z "$RAW_FILES" ]; then
-        echo -e "\033[31mError: No .c files found in the current directory.\033[0m"
-        exit 1
+# ==============================================================================
+# HELPERS
+# ==============================================================================
+
+# Returns 1 (and warns) if the file already exists, so we never overwrite work.
+can_write() {
+    if [ -e "$1" ]; then
+        warn "$1 already exists, skipping."
+        return 1
     fi
+    return 0
+}
 
-    # Step 2: Build clean Makefile SRCS block (1st line: 'SRCS        = ...', rest: '              ...')
-    MAKEFILE_BLOCK=""
-    IS_FIRST=1
-    LINE_COUNT=$(echo "$RAW_FILES" | wc -l | tr -d ' ')
-    CURRENT_LINE=0
+# Asks for option 1 or 2. Result in $ANSWER. Default: 1.
+ask_option() {
+    local reply
+    while true; do
+        read -r -p "$1" reply
+        reply="${reply:-1}"
+        case "$reply" in
+            1|2) ANSWER="$reply"; return ;;
+        esac
+        err "Please enter 1 or 2."
+    done
+}
 
-    while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        CURRENT_LINE=$((CURRENT_LINE + 1))
-        
-        if [ $IS_FIRST -eq 1 ]; then
-            PREFIX="SRCS        = "
-            IS_FIRST=0
-        else
-            PREFIX="              "
-        fi
-
-        if [ $CURRENT_LINE -lt $LINE_COUNT ]; then
-            MAKEFILE_BLOCK="${MAKEFILE_BLOCK}${PREFIX}${line} \\"$'\n'
-        else
-            MAKEFILE_BLOCK="${MAKEFILE_BLOCK}${PREFIX}${line}"
-        fi
-    done <<< "$RAW_FILES"
-
-    # Step 3: Update Makefile cleanly between # SRCS_START and # SRCS_END
-    if [ -f Makefile ]; then
-        export MAKEFILE_BLOCK
-        awk '
-            /# SRCS_END/ {skip=0} 
-            !skip {print} 
-            /# SRCS_START/ {skip=1; print ENVIRON["MAKEFILE_BLOCK"]}
-        ' Makefile > Makefile.tmp && mv Makefile.tmp Makefile
-        echo -e "\033[32m✔ Makefile updated successfully with .c files (grouped by 5).\033[0m"
-    else
-        echo -e "\033[33m[!] No Makefile found in this directory. Skipping Makefile update.\033[0m"
-    fi
-
-    # Step 4: Update README.md cleanly between <!-- FILES_START --> and <!-- FILES_END -->
-    if [ -f README.md ]; then
-        export RAW_FILES
-        awk '
-            /<!-- FILES_END -->/ {skip=0} 
-            !skip {print} 
-            /<!-- FILES_START -->/ {skip=1; print "\n"; print "```c"; print ENVIRON["RAW_FILES"]; print "```"}
-        ' README.md > README.tmp && mv README.tmp README.md
-        echo -e "\033[32m✔ README.md updated successfully.\033[0m"
-    fi
-
-    echo -e "\033[32m✨ Makefile & README.md successfully synchronized!\033[0m"
+# Asks a yes/no question. Result in $ANSWER ("y" or "n"). $2 = default.
+ask_yn() {
+    local reply
+    while true; do
+        read -r -p "$1" reply
+        reply="${reply:-$2}"
+        case "$reply" in
+            [Yy]*) ANSWER="y"; return ;;
+            [Nn]*) ANSWER="n"; return ;;
+        esac
+        err "Please answer y or n."
+    done
 }
 
 # ==============================================================================
-# INTERACTIVE MODE & PROJECT MODES
+# SYNC: update SRCS in Makefile and file list in README.md
 # ==============================================================================
+sync_sources() {
+    local raw block
 
-clear
-echo -e "\033[36m==================================================\033[0m"
-echo -e "\033[36m             🚀 42 PROJECT INITIALIZER            \033[0m"
-echo -e "\033[36m==================================================\033[0m"
-echo ""
+    info "Scanning directory for .c files..."
+    raw=$(find . -maxdepth 1 -name '*.c' | sed 's|^\./||' | sort | xargs -n 5)
 
-# Question 0: Mode selection
-echo -e "\033[33mSelect an action:\033[0m"
-echo "  1) Create / Scaffold a new project"
-echo "  2) Sync / Update .c files in current directory (Makefile & README)"
-read -p "Option [1/2] (default 1): " ACTION_MODE
-ACTION_MODE="${ACTION_MODE:-1}"
+    if [ -z "$raw" ]; then
+        warn "No .c files found in the current directory."
+        block="SRCS        ="
+    else
+        # First line: 'SRCS        = ...', the rest aligned; last line has no '\'
+        block=$(printf '%s\n' "$raw" | awk '
+            { lines[NR] = (NR == 1 ? "SRCS        = " : "              ") $0 }
+            END { for (i = 1; i <= NR; i++) print lines[i] (i < NR ? " \\" : "") }
+        ')
+    fi
 
-if [ "$ACTION_MODE" -eq 2 ]; then
-    update_existing_project
+    # --- Makefile ---
+    if [ ! -f Makefile ]; then
+        warn "No Makefile found. Skipping Makefile update."
+    elif ! grep -q '^# SRCS_START$' Makefile || ! grep -q '^# SRCS_END$' Makefile; then
+        warn "Makefile has no '# SRCS_START' / '# SRCS_END' markers. Skipping."
+    else
+        BLOCK="$block" awk '
+            /^# SRCS_END$/   { skip = 0 }
+            !skip            { print }
+            /^# SRCS_START$/ { skip = 1; print ENVIRON["BLOCK"] }
+        ' Makefile > Makefile.tmp && mv Makefile.tmp Makefile
+        ok "Makefile updated (5 files per line)."
+    fi
+
+    # --- README.md ---
+    if [ ! -f README.md ]; then
+        warn "No README.md found. Skipping README update."
+    elif ! grep -q '^<!-- FILES_START -->$' README.md || ! grep -q '^<!-- FILES_END -->$' README.md; then
+        warn "README.md has no <!-- FILES_START --> / <!-- FILES_END --> markers. Skipping."
+    else
+        LIST="$raw" awk '
+            /^<!-- FILES_END -->$/   { skip = 0 }
+            !skip                    { print }
+            /^<!-- FILES_START -->$/ {
+                skip = 1
+                print "```c"
+                if (ENVIRON["LIST"] != "") print ENVIRON["LIST"]
+                print "```"
+            }
+        ' README.md > README.tmp && mv README.tmp README.md
+        ok "README.md updated."
+    fi
+}
+
+# Shortcut: 42init sync
+if [ "$1" = "sync" ]; then
+    sync_sources
     exit 0
 fi
 
+# ==============================================================================
+# INTERACTIVE WIZARD
+# ==============================================================================
+clear
+echo -e "${CYAN}==================================================${RESET}"
+echo -e "${CYAN}             🚀 42 PROJECT INITIALIZER            ${RESET}"
+echo -e "${CYAN}==================================================${RESET}"
 echo ""
-# Question 1: Project Name
-read -p "📁 Enter project/directory name: " DIR_NAME
-while [ -z "$DIR_NAME" ]; do
-    echo -e "\033[31mError: Project name cannot be empty.\033[0m"
-    read -p "📁 Enter project/directory name: " DIR_NAME
+
+# Question 0: mode
+echo -e "${YELLOW}Select an action:${RESET}"
+echo "  1) Create / Scaffold a new project"
+echo "  2) Sync / Update .c files in current directory (Makefile & README)"
+ask_option "Option [1/2] (default 1): "
+
+if [ "$ANSWER" = "2" ]; then
+    sync_sources
+    exit 0
+fi
+
+# Question 1: project name
+echo ""
+while true; do
+    read -r -p "📁 Enter project/directory name: " DIR_NAME
+    if [[ "$DIR_NAME" =~ ^[A-Za-z0-9._-]+$ && "$DIR_NAME" != "." && "$DIR_NAME" != ".." ]]; then
+        break
+    fi
+    err "Use only letters, digits, '.', '_' or '-' (no spaces or slashes)."
 done
 
-# Question 2: Setup type (Local vs Git Clone)
+# Question 2: local vs git clone
 echo ""
-echo -e "\033[33mRepository Setup:\033[0m"
+echo -e "${YELLOW}Repository Setup:${RESET}"
 echo "  1) Local directory"
 echo "  2) Git clone (Vogsphere / GitHub)"
-read -p "Option [1/2] (default 1): " REPO_TYPE
-REPO_TYPE="${REPO_TYPE:-1}"
+ask_option "Option [1/2] (default 1): "
+REPO_TYPE="$ANSWER"
 
 GIT_URL=""
-if [ "$REPO_TYPE" -eq 2 ]; then
-    read -p "🔗 Enter Git URL: " GIT_URL
+if [ "$REPO_TYPE" = "2" ]; then
+    while [ -z "$GIT_URL" ]; do
+        read -r -p "🔗 Enter Git URL: " GIT_URL
+    done
 fi
 
-# Question 3: User/Authors
+# Question 3: authors (default: the current login)
+DEFAULT_USER="${USER:-$(whoami)}"
 echo ""
-read -p "👤 Enter author login(s) (default: Enter): " USERS
-USERS="${USERS:-legomez}"
+read -r -p "👤 Enter author login(s) (default: $DEFAULT_USER): " USERS
+USERS="${USERS:-$DEFAULT_USER}"
 
-# Question 4: Language type (C vs Python)
+# Question 4: language
 echo ""
-echo -e "\033[33mSelect Project Language:\033[0m"
+echo -e "${YELLOW}Select Project Language:${RESET}"
 echo "  1) C (Common Core / Piscine)"
 echo "  2) Python (Common Core)"
-read -p "Option [1/2] (default 1): " LANG_CHOICE
-LANG_CHOICE="${LANG_CHOICE:-1}"
+ask_option "Option [1/2] (default 1): "
+LANG_CHOICE="$ANSWER"
 
-# C-Specific Questions
 NEED_MAKEFILE="n"
 USE_LIB="n"
-if [ "$LANG_CHOICE" -eq 1 ]; then
+if [ "$LANG_CHOICE" = "1" ]; then
     echo ""
-    read -p "🛠️  Generate a Makefile? [Y/n]: " NEED_MAKEFILE
-    NEED_MAKEFILE="${NEED_MAKEFILE:-y}"
+    ask_yn "🛠️  Generate a Makefile? [Y/n]: " "y"
+    NEED_MAKEFILE="$ANSWER"
 
-    if [[ "$NEED_MAKEFILE" =~ ^[Yy]$ ]]; then
-        read -p "📚 Will you use an external library (e.g., Libft / MLX)? [y/N]: " USE_LIB
-        USE_LIB="${USE_LIB:-n}"
+    if [ "$NEED_MAKEFILE" = "y" ]; then
+        ask_yn "📚 Link against your own libft (./libft)? [y/N]: " "n"
+        USE_LIB="$ANSWER"
     fi
 fi
 
-# Question 5: README Generation
+# Question 5: README
 echo ""
-read -p "📝 Generate README.md? [Y/n]: " NEED_README
-NEED_README="${NEED_README:-y}"
+ask_yn "📝 Generate README.md? [Y/n]: " "y"
+NEED_README="$ANSWER"
 
 # ==============================================================================
-# EXECUTION: Scaffolding Workspace
+# EXECUTION: scaffolding
 # ==============================================================================
-
 echo ""
-echo -e "\033[34m[+] Scaffolding project '$DIR_NAME'...\033[0m"
+info "Scaffolding project '$DIR_NAME'..."
 
-# Clone or create directory
-if [ "$REPO_TYPE" -eq 2 ] && [ -n "$GIT_URL" ]; then
-    git clone "$GIT_URL" "$DIR_NAME"
-    if [ $? -ne 0 ]; then
-        echo -e "\033[31mError: Failed to clone repository.\033[0m"
-        exit 1
-    fi
+if [ "$REPO_TYPE" = "2" ]; then
+    git clone "$GIT_URL" "$DIR_NAME" || { err "Failed to clone repository."; exit 1; }
 else
+    if [ -d "$DIR_NAME" ]; then
+        warn "Directory '$DIR_NAME' already exists: existing files will be kept."
+    fi
     mkdir -p "$DIR_NAME"
 fi
 
 cd "$DIR_NAME" || exit 1
 
-HEADER_GUARD="$(echo "$DIR_NAME" | tr '[:lower:]' '[:upper:]')_H"
+# Valid C identifier: uppercase, anything else -> '_', no leading digit
+HEADER_GUARD="$(echo "$DIR_NAME" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Z0-9\n' '_')_H"
+[[ "$HEADER_GUARD" =~ ^[0-9] ]] && HEADER_GUARD="_$HEADER_GUARD"
 
 # ------------------------------------------------------------------------------
-# C Project Setup
+# C project (.h & Makefile)
 # ------------------------------------------------------------------------------
-if [ "$LANG_CHOICE" -eq 1 ]; then
-    # Generate .h file
-    echo -e "\033[34m[+] Creating $DIR_NAME.h...\033[0m"
-    cat << EOF > "$DIR_NAME.h"
+if [ "$LANG_CHOICE" = "1" ]; then
+
+    if can_write "$DIR_NAME.h"; then
+        info "Creating $DIR_NAME.h..."
+        cat << EOF > "$DIR_NAME.h"
 #ifndef $HEADER_GUARD
 # define $HEADER_GUARD
 
@@ -180,28 +231,25 @@ if [ "$LANG_CHOICE" -eq 1 ]; then
 
 #endif
 EOF
+    fi
 
-    # Generate Makefile if requested
-    if [[ "$NEED_MAKEFILE" =~ ^[Yy]$ ]]; then
-        echo -e "\033[34m[+] Creating Makefile...\033[0m"
+    if [ "$NEED_MAKEFILE" = "y" ] && can_write Makefile; then
+        info "Creating Makefile..."
 
-        if [[ "$USE_LIB" =~ ^[Yy]$ ]]; then
-            # Makefile WITH Library support (Libft)
+        if [ "$USE_LIB" = "y" ]; then
             cat << EOF > Makefile
 NAME        = $DIR_NAME
 
 # SRCS_START
-SRCS        = 
+SRCS        =
 # SRCS_END
 
 OBJS        = \$(SRCS:.c=.o)
 
-# Headers & Include paths
-INCLUDES    = -I. -I./libft
-
-# Libraries & Linker flags
+HEADER      = $DIR_NAME.h
 LIBFT_DIR   = ./libft
 LIBFT       = \$(LIBFT_DIR)/libft.a
+INCLUDES    = -I. -I\$(LIBFT_DIR)
 LIBS        = -L\$(LIBFT_DIR) -lft
 
 CC          = cc
@@ -213,11 +261,11 @@ all: \$(NAME)
 \$(NAME): \$(LIBFT) \$(OBJS)
 	\$(CC) \$(CFLAGS) \$(OBJS) \$(LIBS) -o \$(NAME)
 
-\$(LIBFT):
-	@if [ -d "\$(LIBFT_DIR)" ]; then \$(MAKE) -C \$(LIBFT_DIR); fi
+\$(LIBFT): FORCE
+	@\$(MAKE) -C \$(LIBFT_DIR)
 
-%.o: %.c
-	\$(CC) \$(CFLAGS) \$(INCLUDES) -c $< -o \$@
+%.o: %.c \$(HEADER)
+	\$(CC) \$(CFLAGS) \$(INCLUDES) -c \$< -o \$@
 
 clean:
 	\$(RM) \$(OBJS)
@@ -229,19 +277,20 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+FORCE:
+
+.PHONY: all clean fclean re FORCE
 EOF
         else
-            # Standard Makefile WITHOUT Library
             cat << EOF > Makefile
 NAME        = $DIR_NAME
 
 # SRCS_START
-SRCS        = 
+SRCS        =
 # SRCS_END
 
 OBJS        = \$(SRCS:.c=.o)
-INCLUDES    = $DIR_NAME.h
+HEADER      = $DIR_NAME.h
 
 CC          = cc
 CFLAGS      = -Wall -Wextra -Werror -I.
@@ -252,8 +301,8 @@ all: \$(NAME)
 \$(NAME): \$(OBJS)
 	\$(CC) \$(CFLAGS) \$(OBJS) -o \$(NAME)
 
-%.o: %.c \$(INCLUDES)
-	\$(CC) \$(CFLAGS) -c $< -o \$@
+%.o: %.c \$(HEADER)
+	\$(CC) \$(CFLAGS) -c \$< -o \$@
 
 clean:
 	\$(RM) \$(OBJS)
@@ -269,49 +318,60 @@ EOF
     fi
 
 # ------------------------------------------------------------------------------
-# Python Project Setup
+# Python project
 # ------------------------------------------------------------------------------
-elif [ "$LANG_CHOICE" -eq 2 ]; then
-    echo -e "\033[34m[+] Setting up Python project structure...\033[0m"
-    
-    cat << EOF > main.py
+else
+    info "Setting up Python project structure..."
+
+    if can_write main.py; then
+        cat << EOF > main.py
 #!/usr/bin/env python3
 """
 Project: $DIR_NAME
 Author(s): $USERS
 """
 
+
 def main():
     print("Hello from $DIR_NAME!")
+
 
 if __name__ == "__main__":
     main()
 EOF
-    chmod +x main.py
-    touch requirements.txt
+        chmod +x main.py
+    fi
+    [ -e requirements.txt ] || touch requirements.txt
 fi
 
 # ------------------------------------------------------------------------------
-# README.md Generation
+# README.md
 # ------------------------------------------------------------------------------
-if [[ "$NEED_README" =~ ^[Yy]$ ]]; then
-    echo -e "\033[34m[+] Creating README.md...\033[0m"
-    cat << EOF > README.md
-*This project has been created as part of the 42 curriculum by $USERS.*
- 
-# $DIR_NAME
- 
-## Description
- 
-<!-- Goal of the project, short overview and allowed external functions. -->
+if [ "$NEED_README" = "y" ] && can_write README.md; then
+    info "Creating README.md..."
 
-## Project Files
+    # The file list (and its markers) only makes sense for C projects
+    FILES_SECTION=""
+    if [ "$LANG_CHOICE" = "1" ]; then
+        FILES_SECTION="### Project Files
 
 <!-- FILES_START -->
 <!-- FILES_END -->
- 
+"
+    fi
+
+    cat << EOF > README.md
+*This project has been created as part of the 42 curriculum by $USERS.*
+
+# $DIR_NAME
+
+## Description
+
+<!-- Goal of the project, short overview and allowed external functions. -->
+
+$FILES_SECTION
 ## Algorithm / Architecture: explanation and justification
- 
+
 <!--
 - Data structures or classes used and why.
 - Step-by-step flow, ideally with a worked example.
@@ -320,24 +380,31 @@ if [[ "$NEED_README" =~ ^[Yy]$ ]]; then
 -->
 
 ## Instructions
- 
+
 ### Usage
- 
+
 <!-- How to run it, with a short example. -->
- 
+
 ### Testing
- 
+
 <!-- Edge cases tested and tools used. -->
- 
+
 ## Resources
- 
+
 - [Resource name](https://example.com) - what it was used for.
- 
+
 ### Use of AI
- 
+
 <!-- Which AI tools were used, for which tasks and for which parts of the project. -->
 EOF
 fi
 
+# Pick up any .c files that were already there (e.g. a cloned repository)
+if [ "$LANG_CHOICE" = "1" ] && compgen -G "*.c" > /dev/null; then
+    sync_sources
+fi
+
+# ------------------------------------------------------------------------------
+
 echo ""
-echo -e "\033[32m✨ Workspace for '$DIR_NAME' successfully created for [$USERS]!\033[0m"
+echo -e "${GREEN}✨ Workspace for '$DIR_NAME' successfully created for [$USERS]!${RESET}"
