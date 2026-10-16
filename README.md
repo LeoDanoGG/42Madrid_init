@@ -3,11 +3,11 @@
 An interactive CLI assistant (*wizard*) designed for 42 School students to quickly scaffold project workspaces, clone Vogsphere/GitHub repositories, generate language-specific boilerplate (C & Python), and keep source files synchronized between `Makefile` and `README.md`.
 
 Index
- - [Key features & architecture](##🛠️-Key-features-&-architecture)
- - [Global installation & setup](##⚙️-Global-installation-&-setup-(alias))
- - [How to use](##🚀-How-to-use)
- - [Updating existing projects](##🔄-Updating-existing-projects-(`Sync`-mode))
- - [Important reminders](##⚠️-Important-42-guidelines-&-reminders)
+ - [Key features & architecture](https://github.com/LeoDanoGG/42Madrid_init/tree/main#%EF%B8%8F-key-features--architecture)
+ - [Global installation & setup](https://github.com/LeoDanoGG/42Madrid_init/tree/main#%EF%B8%8F-global-installation--setup-alias)
+ - [How to use](https://github.com/LeoDanoGG/42Madrid_init/tree/main#-how-to-use)
+ - [Updating existing projects](https://github.com/LeoDanoGG/42Madrid_init/tree/main#-updating-existing-projects-sync-mode)
+ - [Important reminders](https://github.com/LeoDanoGG/42Madrid_init/tree/main#%EF%B8%8F-important-42-guidelines--reminders)
 
 ---
 
